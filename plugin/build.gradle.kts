@@ -82,17 +82,17 @@ gradlePlugin {
 			description = "The packaging method is spring bootJar"
 			tags = listOf("spring", "bootJar")
 		}
-//		create("deployedPlugin") {
-//			id = "io.github.rocwg.gradle.plugin.mvn.deployed"
-//			implementationClass = "io.github.rocwg.gradle.plugin.maven.DeployedPlugin"
-//			displayName = "DeployedPlugin"
-//			description = "Used to deploy releases to MVN"
-//			tags = listOf("deploy", "maven")
-//		}
-//		create("protobufPlugin"){
-//			id = "google.protobuf"
-//			implementationClass = "com.google.protobuf.gradle.ProtobufPlugin"
-//		}
+		create("deployedPlugin") {
+			id = "io.github.rocwg.gradle.plugin.mvn.deployed"
+			implementationClass = "io.github.rocwg.gradle.plugin.maven.DeployedPlugin"
+			displayName = "DeployedPlugin"
+			description = "Used to deploy releases to MVN"
+			tags = listOf("deploy", "maven")
+		}
+		create("JacocoExpand") {
+			id = "io.github.rocwg.gradle.plugin.jacoco"
+			implementationClass = "io.github.rocwg.gradle.plugin.tasks.JacocoExpandPlugin"
+		}
 	}
 }
 
@@ -103,4 +103,41 @@ tasks.jar {
 		"${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
 	)
 	manifest.attributes.putIfAbsent("Gradle-Version", GradleVersion.current())
+}
+
+// 配置发布
+publishing {
+	publications {
+		create<MavenPublication>("pluginMaven") {
+			// 这里 Gradle 会自动帮你把 gradlePlugin 里的插件全部打包发布
+		}
+	}
+	repositories {
+		// 1. 动态获取环境变量中的 URL
+		val snapshotUrl = providers.environmentVariable("ALIYUN_MAVEN_SNAPSHOT_URL").orNull
+			?: providers.gradleProperty("aliyun_maven_snapshot_url").orNull
+		val releaseUrl = providers.environmentVariable("ALIYUN_MAVEN_RELEASE_URL").orNull
+			?: providers.gradleProperty("aliyun_maven_release_url").orNull
+
+		// 2. 假设你的插件版本定义在某处（例如 "1.0.0-SNAPSHOT"）
+		val pluginVersion = providers.gradleProperty("version")
+
+		// 3. 智能判断当前应该用哪个仓
+		val targetUrl = if (pluginVersion.toString().endsWith("-SNAPSHOT")) snapshotUrl else releaseUrl
+
+		if (!targetUrl.isNullOrBlank()) {
+			maven {
+				url = uri(targetUrl)
+				credentials {
+					username = providers.environmentVariable("ALIYUN_MAVEN_USERNAME").orNull
+						?: providers.gradleProperty("aliyun_maven_username").orNull
+					password = providers.environmentVariable("ALIYUN_MAVEN_PASSWORD").orNull
+						?: providers.gradleProperty("aliyun_maven_password").orNull
+				}
+			}
+		} else {
+			// 可选：如果没配置私库，打印一条警告，防止团队其他成员迷茫
+			logger.warn("未检测到私有仓库 URL 配置，将无法拉取自定义插件！")
+		}
+	}
 }

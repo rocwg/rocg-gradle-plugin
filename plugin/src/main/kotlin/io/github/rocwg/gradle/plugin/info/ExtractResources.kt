@@ -22,6 +22,7 @@ import org.gradle.api.provider.ListProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
@@ -29,6 +30,7 @@ import java.io.OutputStream
 /**
  * @author livk
  */
+@DisableCachingByDefault(because = "提取资源操作非常快，不需要占用额外的缓存空间")
 abstract class ExtractResources : DefaultTask() {
 
 	@Input
