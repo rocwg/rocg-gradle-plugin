@@ -119,11 +119,13 @@ publishing {
 		val releaseUrl = providers.environmentVariable("ALIYUN_MAVEN_RELEASE_URL").orNull
 			?: providers.gradleProperty("aliyun_maven_release_url").orNull
 
-		// 2. 假设你的插件版本定义在某处（例如 "1.0.0-SNAPSHOT"）
-		val pluginVersion = providers.gradleProperty("version")
+		// 2. 直接通过 project.version 拿到实值字符串，彻底避免被 Provider 包装误导
+		val pluginVersion = project.version.toString()
+		logger.lifecycle("[Build Logic] 插件版本: $pluginVersion")
 
-		// 3. 智能判断当前应该用哪个仓
-		val targetUrl = if (pluginVersion.toString().endsWith("-SNAPSHOT")) snapshotUrl else releaseUrl
+		// 3. 智能判断（现在 pluginVersion 是真正的字符串了）
+		val targetUrl = if (pluginVersion.endsWith("-SNAPSHOT")) snapshotUrl else releaseUrl
+		logger.lifecycle("[Build Logic] 私有仓库: $targetUrl")
 
 		if (!targetUrl.isNullOrBlank()) {
 			maven {
@@ -137,7 +139,7 @@ publishing {
 			}
 		} else {
 			// 可选：如果没配置私库，打印一条警告，防止团队其他成员迷茫
-			logger.warn("未检测到私有仓库 URL 配置，将无法拉取自定义插件！")
+			logger.warn("⚠️ [Build Logic] 未检测到私有仓库 URL 配置，发布任务将失效！")
 		}
 	}
 }
