@@ -25,13 +25,13 @@ import org.gradle.api.tasks.bundling.Jar
  * @author livk
  */
 class RootPlugin : Plugin<Project> {
+
 	override fun apply(project: Project) {
 		project.pluginManager.apply(BasePlugin::class.java)
 		project.pluginManager.apply(CorePlugin::class.java)
 
-		project.tasks.withType(Jar::class.java) {
-			it.enabled = false
+		project.tasks.withType(Jar::class.java).configureEach {
+			enabled = false
 		}
 	}
 }
-

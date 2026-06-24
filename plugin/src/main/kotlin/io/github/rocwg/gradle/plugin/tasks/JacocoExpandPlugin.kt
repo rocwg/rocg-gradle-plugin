@@ -25,24 +25,27 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
 /**
  * @author livk
  */
-abstract class JacocoExpand : Plugin<Project> {
+abstract class JacocoExpandPlugin : Plugin<Project> {
+
 	companion object {
-		private const val TASK_NAME = "jacocoTestReport"
+		const val TASK_NAME = "jacocoTestReport"
 	}
 
 	override fun apply(project: Project) {
+
 		project.pluginManager.apply(JacocoPlugin::class.java)
 
-		project.tasks.withType(Test::class.java) {
-			it.finalizedBy(TASK_NAME)
+		// 所有 Test 任务执行完自动触发报告
+		project.tasks.withType(Test::class.java).configureEach {
+			finalizedBy(TASK_NAME)
 		}
 
-		project.tasks.named(TASK_NAME, JacocoReport::class.java){ jacocoReport->
-			jacocoReport.dependsOn("test")
-
-			jacocoReport.reports{
-				it.xml.required.set(true)
-				it.html.required.set(false)
+		// 配置 Jacoco 报告
+		project.tasks.named(TASK_NAME, JacocoReport::class.java).configure {
+			dependsOn("test")
+			reports {
+				xml.required.set(true)
+				html.required.set(false)
 			}
 		}
 	}

@@ -26,13 +26,20 @@ import org.gradle.api.tasks.Delete
 abstract class DeleteExpand : Plugin<Project> {
 
 	companion object {
-		private val cleanFiles = setOf("build", "out", "bin", "src/main/generated", "src/test/generated_tests")
+		val CLEAN_FILES = setOf(
+			"build",
+			"out",
+			"bin",
+			"src/main/generated",
+			"src/test/generated_tests"
+		)
 	}
 
 	override fun apply(project: Project) {
+
 		project.tasks.withType(Delete::class.java) {
-			cleanFiles.forEach { fileName ->
-				it.delete(project.projectDir.absolutePath + "/$fileName")
+			CLEAN_FILES.forEach { path ->
+				delete(project.layout.projectDirectory.dir(path))
 			}
 		}
 	}

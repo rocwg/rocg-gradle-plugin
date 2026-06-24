@@ -20,31 +20,37 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
+import java.net.URI
 
 /**
  * @author livk
  */
 abstract class MavenRepositoryPlugin : Plugin<Project> {
+
 	override fun apply(project: Project) {
 		project.pluginManager.apply(MavenPublishPlugin::class.java)
-		val publishing = project.extensions.getByType(PublishingExtension::class.java)
-		publishing.repositories.mavenLocal()
-		try {
-			val releasesRepoUrl = project.property("mvn.releasesRepoUrl") as String
-			val snapshotsRepoUrl = project.property("mvn.releasesRepoUrl") as String
-			publishing.repositories.maven { maven ->
-				//使用不安全的http请求、也就是缺失SSL
-				maven.isAllowInsecureProtocol = true
-				val url = if (project.version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl
-				maven.setUrl(url)
-				maven.credentials {
-					it.username = project.property("mvn.username") as String
-					it.password = project.property("mvn.password") as String
-				}
-			}
-		} catch (_: Exception) {
 
+		project.extensions.getByType(PublishingExtension::class.java).run {
+			repositories.mavenLocal()
+			try {
+				val releasesRepoUrl = project.property("mvn.releasesRepoUrl").toString()
+				val snapshotsRepoUrl = project.property("mvn.releasesRepoUrl").toString()
+				repositories.maven {
+					name = "CustomizeMaven"
+					isAllowInsecureProtocol = true
+					url = if (project.version.toString().endsWith("SNAPSHOT")) {
+						URI(snapshotsRepoUrl)
+					} else {
+						URI(releasesRepoUrl)
+					}
+					credentials {
+						username = project.property("mvn.username").toString()
+						password = project.property("mvn.password").toString()
+					}
+				}
+			} catch (_: Exception) {
+				// 忽略异常
+			}
 		}
 	}
-
 }

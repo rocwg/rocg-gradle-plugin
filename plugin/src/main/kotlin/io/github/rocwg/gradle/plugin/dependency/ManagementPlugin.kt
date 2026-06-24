@@ -29,6 +29,7 @@ import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
  * @author livk
  */
 abstract class ManagementPlugin : Plugin<Project> {
+
 	companion object {
 		const val MANAGEMENT = "management"
 	}
@@ -36,29 +37,37 @@ abstract class ManagementPlugin : Plugin<Project> {
 	override fun apply(project: Project) {
 		val configurations = project.configurations
 		project.pluginManager.apply(JavaPlugin::class.java)
-		configurations.create(MANAGEMENT) { management ->
-			management.isVisible = false
-			management.isCanBeResolved = false
-			management.isCanBeConsumed = false
+		configurations.create(MANAGEMENT) {
+			isCanBeResolved = false
+			isCanBeConsumed = false
 			val plugins = project.plugins
-			plugins.withType(JavaPlugin::class.java) {
-				project.extensions.getByType(JavaPluginExtension::class.java).sourceSets.all { sourceSet ->
-					configurations.getByName(sourceSet.compileClasspathConfigurationName).extendsFrom(management)
-					configurations.getByName(sourceSet.runtimeClasspathConfigurationName).extendsFrom(management)
-					configurations.getByName(sourceSet.annotationProcessorConfigurationName).extendsFrom(management)
-				}
+			plugins.withType(JavaPlugin::class.java).configureEach {
+				project.extensions.getByType(JavaPluginExtension::class.java)
+					.sourceSets.configureEach {
+						configurations.named(compileClasspathConfigurationName) {
+							extendsFrom(this@create)
+						}
+						configurations.named(runtimeClasspathConfigurationName) {
+							extendsFrom(this@create)
+						}
+						configurations.named(annotationProcessorConfigurationName) {
+							extendsFrom(this@create)
+						}
+					}
 			}
-			plugins.withType(JavaTestFixturesPlugin::class.java) {
-				configurations.getByName("testFixturesCompileClasspath").extendsFrom(management)
-				configurations.getByName("testFixturesRuntimeClasspath").extendsFrom(management)
+			plugins.withType(JavaTestFixturesPlugin::class.java).configureEach {
+				configurations.named("testFixturesCompileClasspath") {
+					extendsFrom(this@create)
+				}
+				configurations.named("testFixturesRuntimeClasspath") {
+					extendsFrom(this@create)
+				}
 			}
 			plugins.withType(MavenPublishPlugin::class.java) {
 				project.extensions.getByType(PublishingExtension::class.java).publications
-					.withType(MavenPublication::class.java) { mavenPublication ->
-						mavenPublication.versionMapping { versions ->
-							versions.allVariants {
-								it.fromResolutionResult()
-							}
+					.withType(MavenPublication::class.java).configureEach {
+						versionMapping {
+							allVariants { fromResolutionResult() }
 						}
 					}
 			}

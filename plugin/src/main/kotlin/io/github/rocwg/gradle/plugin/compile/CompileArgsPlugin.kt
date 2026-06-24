@@ -30,57 +30,47 @@ import org.gradle.external.javadoc.StandardJavadocDocletOptions
  * @author livk
  */
 abstract class CompileArgsPlugin : Plugin<Project> {
-	companion object {
-		private val COMPILER_ARGS = arrayListOf<String>()
-		private const val MAPSTRUCT_PROCESSOR_NAME = "mapstruct-processor"
-		private val MAPSTRUCT_COMPILER_ARGS = arrayListOf<String>()
-		private const val UTF_8 = "UTF-8"
-	}
 
-	init {
-		COMPILER_ARGS.addAll(
-			listOf(
-				"-Xlint:-options",
-				"-Xlint:varargs",
-				"-Xlint:rawtypes",
-				"-Xlint:deprecation",
-				"-Xlint:unchecked",
-				"-Werror",
-				"-parameters"
-			)
+	companion object {
+		val COMPILER_ARGS = listOf(
+			"-Xlint:-options",
+			"-Xlint:varargs",
+			"-Xlint:rawtypes",
+			"-Xlint:deprecation",
+			"-Xlint:unchecked",
+			"-Werror",
+			"-parameters"
 		)
-		MAPSTRUCT_COMPILER_ARGS.addAll(listOf("-Amapstruct.unmappedTargetPolicy=IGNORE"))
+
+		const val UTF_8 = "UTF-8"
 	}
 
 	override fun apply(project: Project) {
 		project.pluginManager.apply(JavaPlugin::class.java)
-		project.tasks.withType(Javadoc::class.java) { javadoc ->
-			val options = javadoc.options as StandardJavadocDocletOptions
-			options.encoding(UTF_8)
-			javadoc.isFailOnError = false
+
+		// Javadoc
+		project.tasks.withType(Javadoc::class.java).configureEach {
+			isFailOnError = false
+			val options = options as StandardJavadocDocletOptions
+			options.encoding = UTF_8
 			options.outputLevel = JavadocOutputLevel.QUIET
 			options.addStringOption("Xdoclint:none", "-quiet")
 		}
 
-		project.tasks.withType(JavaCompile::class.java).matching { compileTask ->
-			compileTask.name == JavaPlugin.COMPILE_JAVA_TASK_NAME ||
-				compileTask.name == JavaPlugin.COMPILE_TEST_JAVA_TASK_NAME ||
-				compileTask.name == "compileTestFixturesJava"
-		}.forEach { addCompile(it) }
-
-		project.tasks.withType(Test::class.java) {
-			it.useJUnitPlatform()
-		}
-
-		val javaCompile = project.tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME).get() as JavaCompile
-		project.afterEvaluate {
-			val dependencyName = hashSetOf<String>()
-			project.configurations.forEach {
-				dependencyName.addAll(it.dependencies.map { dependency -> dependency.name })
+		// JavaCompile
+		project.tasks.withType(JavaCompile::class.java)
+			.matching {
+				it.name in listOf(
+					JavaPlugin.COMPILE_JAVA_TASK_NAME,
+					JavaPlugin.COMPILE_TEST_JAVA_TASK_NAME,
+					"compileTestFixturesJava"
+				)
 			}
-			if (dependencyName.contains(MAPSTRUCT_PROCESSOR_NAME)) {
-				javaCompile.options.compilerArgs.addAll(MAPSTRUCT_COMPILER_ARGS)
-			}
+			.configureEach { addCompile(this) }
+
+		// Test
+		project.tasks.withType(Test::class.java).configureEach {
+			useJUnitPlatform()
 		}
 	}
 

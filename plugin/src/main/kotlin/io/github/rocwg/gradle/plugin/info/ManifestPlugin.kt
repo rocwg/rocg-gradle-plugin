@@ -26,18 +26,17 @@ import org.gradle.util.GradleVersion
  * @author livk
  */
 abstract class ManifestPlugin : Plugin<Project> {
+
 	override fun apply(project: Project) {
 		project.pluginManager.apply(JavaPlugin::class.java)
-		project.tasks.withType(Jar::class.java) {
-			val attributes = it.manifest.attributes
-			attributes.putIfAbsent("Implementation-Group", project.group)
-			attributes.putIfAbsent("Implementation-Title", project.name)
-			attributes.putIfAbsent("Implementation-Version", project.version)
-			attributes.putIfAbsent(
-				"Created-By",
-				"${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
-			)
-			attributes.putIfAbsent("Gradle-Version", GradleVersion.current())
+		project.tasks.withType(Jar::class.java).configureEach {
+			manifest {
+				attributes.putIfAbsent("Implementation-Group", project.group)
+				attributes.putIfAbsent("Implementation-Title", project.name)
+				attributes.putIfAbsent("Implementation-Version", project.version)
+				attributes.putIfAbsent("Created-Jdk", System.getProperty("java.version"))
+				attributes.putIfAbsent("Gradle-Version", GradleVersion.current())
+			}
 		}
 	}
 }

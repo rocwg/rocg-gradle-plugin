@@ -18,13 +18,6 @@ package io.github.rocwg.gradle.plugin.maven
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.plugins.JavaPlatformPlugin
-import org.gradle.api.plugins.JavaPlugin
-import org.gradle.api.plugins.JavaPluginExtension
-import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.maven.MavenPublication
-import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
-import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.signing.SigningExtension
 import org.gradle.plugins.signing.SigningPlugin
 
@@ -32,78 +25,14 @@ import org.gradle.plugins.signing.SigningPlugin
  * @author livk
  */
 abstract class DeployedPlugin : Plugin<Project> {
-	companion object {
-		const val NAME = "maven"
-	}
 
 	override fun apply(project: Project) {
 		project.pluginManager.apply(SigningPlugin::class.java)
-		val publication = publication(project)
-		val signing = project.extensions.getByType(SigningExtension::class.java)
-		signing.isRequired = false
-		signing.sign(publication)
-		project.afterEvaluate {
-			project.plugins.withType(JavaPlugin::class.java) {
-				if ((project.tasks.named(JavaPlugin.JAR_TASK_NAME).get() as Jar).isEnabled) {
-					val javaPluginExtension = project.extensions.getByType(JavaPluginExtension::class.java)
-					javaPluginExtension.withSourcesJar()
-					javaPluginExtension.withJavadocJar()
-					project.components
-						.matching { softwareComponent -> softwareComponent.name == "java" }
-						.all { publication.from(it) }
-					mavenInfo(publication, project)
-				}
-			}
-		}
-		project.plugins.withType(JavaPlatformPlugin::class.java) {
-			project.components
-				.matching { softwareComponent -> softwareComponent.name == "javaPlatform" }
-				.all { publication.from(it) }
-			mavenInfo(publication, project)
-		}
-	}
-
-	private fun publication(project: Project): MavenPublication {
-		project.pluginManager.apply(MavenPublishPlugin::class.java)
 		project.pluginManager.apply(MavenRepositoryPlugin::class.java)
-		return project.extensions
-			.getByType(PublishingExtension::class.java)
-			.publications
-			.create(NAME, MavenPublication::class.java){
-				it.suppressAllPomMetadataWarnings()
-			}
+		project.pluginManager.apply(MavenPortalPublishPlugin::class.java)
 
-	}
-
-	private fun mavenInfo(publication: MavenPublication, project: Project) {
-		publication.versionMapping { versionMappingStrategy ->
-			versionMappingStrategy.allVariants { variantVersionMappingStrategy ->
-				variantVersionMappingStrategy.fromResolutionResult()
-			}
-		}
-		publication.pom { pom ->
-			project.afterEvaluate {
-				pom.name.set(project.name)
-				pom.description.set(project.description)
-			}
-			pom.url.set("https://github.com/rocwg/" + project.rootProject.name)
-			pom.licenses { licenses ->
-				licenses.license { license ->
-					license.name.set("The Apache License, Version 2.0")
-					license.url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-				}
-			}
-			pom.developers { developers ->
-				developers.developer { developer ->
-					developer.name.set("rocwg")
-					developer.email.set("rocwg@gmail.com")
-				}
-			}
-			pom.scm { scm ->
-				scm.connection.set("git@github.com:rocwg/" + project.rootProject.name + ".git")
-				scm.url.set("https://github.com/rocwg/" + project.rootProject.name + "/")
-			}
+		project.extensions.configure(SigningExtension::class.java) {
+			useGpgCmd()
 		}
 	}
-
 }

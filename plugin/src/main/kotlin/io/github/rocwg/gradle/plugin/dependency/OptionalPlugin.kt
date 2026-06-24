@@ -20,35 +20,49 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.tasks.bundling.Jar
 
 /**
  * @author livk
  */
 abstract class OptionalPlugin : Plugin<Project> {
+
 	companion object {
 		const val OPTIONAL = "optional"
 	}
 
 	override fun apply(project: Project) {
-		val configurations = project.configurations
 		project.pluginManager.apply(JavaPlugin::class.java)
-		configurations.create(OPTIONAL) { optional ->
-			optional.isCanBeResolved = false
-			optional.isCanBeConsumed = false
-			project.plugins.withType(JavaPlugin::class.java) {
-				val extension = project.extensions.getByType(JavaPluginExtension::class.java)
-				extension.sourceSets.create(OPTIONAL)
-				extension.registerFeature(OPTIONAL) {
-					it.usingSourceSet(extension.sourceSets.getAt(OPTIONAL))
+		val configurations = project.configurations
+		val optional = configurations.create(OPTIONAL).apply {
+			isCanBeResolved = false
+			isCanBeConsumed = false
+		}
+		project.plugins.withType(JavaPlugin::class.java).configureEach {
+			val javaExt = project.extensions.getByType(JavaPluginExtension::class.java)
+			with(javaExt) {
+				val optionalSourceSet = sourceSets.create(OPTIONAL)
+				registerFeature(OPTIONAL) {
+					usingSourceSet(optionalSourceSet)
 				}
-				extension.sourceSets.all { sourceSet ->
-					configurations.getByName(sourceSet.compileClasspathConfigurationName).extendsFrom(optional)
-					configurations.getByName(sourceSet.runtimeClasspathConfigurationName).extendsFrom(optional)
-					if (sourceSet.name != OPTIONAL) {
-						configurations.getByName(OPTIONAL + "Api")
-							.extendsFrom(optional)
+				sourceSets.configureEach {
+					configurations.named(compileClasspathConfigurationName).configure {
+						extendsFrom(optional)
 					}
+					configurations.named(runtimeClasspathConfigurationName).configure {
+						extendsFrom(optional)
+					}
+					configurations.named("${OPTIONAL}${JavaPlugin.API_CONFIGURATION_NAME.replaceFirstChar { c -> c.uppercase() }}")
+						.configure {
+							extendsFrom(optional)
+						}
 				}
+				sourceSets.remove(optionalSourceSet)
+			}
+		}
+		project.tasks.withType(Jar::class.java) {
+			if (name == "${OPTIONAL}${JavaPlugin.JAR_TASK_NAME.replaceFirstChar { it.uppercase() }}") {
+				isEnabled = false
 			}
 		}
 	}

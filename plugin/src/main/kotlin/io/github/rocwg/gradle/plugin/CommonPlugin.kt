@@ -25,6 +25,7 @@ import org.gradle.api.plugins.JavaLibraryPlugin
  * @author livk
  */
 class CommonPlugin : Plugin<Project> {
+
 	override fun apply(project: Project) {
 		project.pluginManager.apply(JavaLibraryPlugin::class.java)
 		project.pluginManager.apply(ModulePlugin::class.java)

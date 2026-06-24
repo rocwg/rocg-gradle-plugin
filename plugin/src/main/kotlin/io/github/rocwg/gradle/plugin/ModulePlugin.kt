@@ -18,7 +18,6 @@ package io.github.rocwg.gradle.plugin
 
 import io.github.rocwg.gradle.plugin.compile.CompileArgsPlugin
 import io.github.rocwg.gradle.plugin.info.ExtractResources
-import io.github.rocwg.gradle.plugin.tasks.JacocoExpand
 import io.spring.javaformat.gradle.SpringJavaFormatPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -28,21 +27,26 @@ import org.gradle.api.tasks.bundling.Jar
  * @author livk
  */
 class ModulePlugin : Plugin<Project> {
+
 	override fun apply(project: Project) {
 		project.pluginManager.apply(CompileArgsPlugin::class.java)
 		project.pluginManager.apply(CorePlugin::class.java)
 		project.pluginManager.apply(SpringJavaFormatPlugin::class.java)
-		project.pluginManager.apply(JacocoExpand::class.java)
 
-		val extractLegalResources = project.tasks.create("extractLegalResources", ExtractResources::class.java)
-		extractLegalResources.getDestinationDirectory().set(project.layout.buildDirectory.dir("legal"))
-		extractLegalResources.setResourcesNames(listOf("LICENSE.txt"))
+		project.tasks.register("checkstyle") {
+			group = "other"
+			dependsOn("checkstyleMain", "checkstyleTest", "checkFormat")
+		}
 
-		project.tasks.withType(Jar::class.java) { jar ->
-			project.afterEvaluate {
-				jar.metaInf { metaInf ->
-					metaInf.from(extractLegalResources)
-				}
+		val extractResourcesProvider = project.tasks.register("extractLegalResources", ExtractResources::class.java) {
+			getDestinationDirectory().set(project.layout.buildDirectory.dir("legal"))
+			getResourceNames().add("LICENSE.txt")
+		}
+
+		project.tasks.withType(Jar::class.java).configureEach {
+			dependsOn(extractResourcesProvider)
+			metaInf {
+				from(extractResourcesProvider)
 			}
 		}
 	}

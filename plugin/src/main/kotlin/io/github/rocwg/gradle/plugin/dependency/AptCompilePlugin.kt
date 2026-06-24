@@ -23,34 +23,34 @@ import org.gradle.api.plugins.JavaPlugin
 /**
  * @author livk
  */
-abstract class CompileProcessorPlugin : Plugin<Project> {
+abstract class AptCompilePlugin : Plugin<Project> {
 
 	companion object {
-		const val COMPILE_PROCESSOR = "compileProcessor"
+		const val APT_COMPILE = "aptCompile"
 
-		val DEPENDENCY_NAMES_SET = HashSet<String>()
-
-		init {
-			DEPENDENCY_NAMES_SET.addAll(
-				setOf(
-					JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME,
-					JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME,
-					JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME,
-					JavaPlugin.TEST_ANNOTATION_PROCESSOR_CONFIGURATION_NAME
-				)
-			)
-		}
+		val DEPENDENCY_NAMES_SET = setOf(
+			JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME,
+			JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME,
+			JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME,
+			JavaPlugin.TEST_ANNOTATION_PROCESSOR_CONFIGURATION_NAME
+		)
 	}
 
 	override fun apply(project: Project) {
-		val configurations = project.configurations
 		project.pluginManager.apply(JavaPlugin::class.java)
-		configurations.create(COMPILE_PROCESSOR) { compileProcessor ->
-			compileProcessor.isVisible = false
-			compileProcessor.isCanBeResolved = false
-			compileProcessor.isCanBeConsumed = false
-			project.plugins.withType(JavaPlugin::class.java) {
-				DEPENDENCY_NAMES_SET.forEach { configurations.getByName(it).extendsFrom(compileProcessor) }
+
+		val configurations = project.configurations
+
+		val apt = configurations.create(APT_COMPILE).apply {
+			isCanBeResolved = false
+			isCanBeConsumed = false
+		}
+
+		project.plugins.withType(JavaPlugin::class.java).configureEach {
+			DEPENDENCY_NAMES_SET.forEach { configName ->
+				configurations.named(configName).configure {
+					extendsFrom(apt)
+				}
 			}
 		}
 	}
