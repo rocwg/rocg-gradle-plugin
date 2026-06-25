@@ -48,49 +48,49 @@ gradlePlugin {
 
 	plugins {
 		create("bomPlugin") {
-			id = "io.github.rocwg.gradle.plugin.bom"
+			id = "io.github.rocwg.bom"
 			implementationClass = "io.github.rocwg.gradle.plugin.BomPlugin"
 			displayName = "BomPlugin"
 			description = "bom or dependencies use"
 			tags = listOf("bom", "dependencies")
 		}
 		create("modulePlugin") {
-			id = "io.github.rocwg.gradle.plugin.module"
+			id = "io.github.rocwg.module"
 			implementationClass = "io.github.rocwg.gradle.plugin.ModulePlugin"
 			displayName = "ModulePlugin"
 			description = "Used to mark modules, all available nodes"
 			tags = listOf("modules", "nodes")
 		}
 		create("commonPlugin") {
-			id = "io.github.rocwg.gradle.plugin.common"
+			id = "io.github.rocwg.common"
 			implementationClass = "io.github.rocwg.gradle.plugin.CommonPlugin"
 			displayName = "CommonPlugin"
 			description = "The packaging method is ordinary jar instead of spring bootJar"
 			tags = listOf("jar", "package")
 		}
 		create("rootProjectPlugin") {
-			id = "io.github.rocwg.gradle.plugin.root"
+			id = "io.github.rocwg.root"
 			implementationClass = "io.github.rocwg.gradle.plugin.RootPlugin"
 			displayName = "RootPlugin"
 			description = "Used to mark certain root nodes to directly operate sub-packages"
 			tags = listOf("rootNodes")
 		}
 		create("servicePlugin") {
-			id = "io.github.rocwg.gradle.plugin.service"
+			id = "io.github.rocwg.service"
 			implementationClass = "io.github.rocwg.gradle.plugin.ServicePlugin"
 			displayName = "ServicePlugin"
 			description = "The packaging method is spring bootJar"
 			tags = listOf("spring", "bootJar")
 		}
 		create("deployedPlugin") {
-			id = "io.github.rocwg.gradle.plugin.mvn.deployed"
+			id = "io.github.rocwg.mvn.deployed"
 			implementationClass = "io.github.rocwg.gradle.plugin.maven.DeployedPlugin"
 			displayName = "DeployedPlugin"
 			description = "Used to deploy releases to MVN"
 			tags = listOf("deploy", "maven")
 		}
 		create("JacocoExpand") {
-			id = "io.github.rocwg.gradle.plugin.jacoco"
+			id = "io.github.rocwg.jacoco"
 			implementationClass = "io.github.rocwg.gradle.plugin.tasks.JacocoExpandPlugin"
 		}
 	}
@@ -105,7 +105,11 @@ tasks.jar {
 	manifest.attributes.putIfAbsent("Gradle-Version", GradleVersion.current())
 }
 
-// 配置发布
+// 配置-坐标
+//group = "io.github.rocwg"
+//version = "1.0.1-SNAPSHOT"
+
+// 配置-发布
 publishing {
 	publications {
 		create<MavenPublication>("pluginMaven") {
